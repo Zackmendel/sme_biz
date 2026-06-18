@@ -11,6 +11,7 @@ from sales import show_sales_management_ui
 from auth import show_auth_screen, sign_out
 from onboard import show_onboarding_screen
 from products import show_products_management_ui
+from dashboard import show_dashboard_metrics
 
 # Initialize core page settings
 st.set_page_config(layout="wide", page_title="Business Portal")
@@ -37,10 +38,10 @@ def main_app(user_email, user_role, user_business_id):
         
         nav_options = ["Home"]
         if user_role in ["admin", "owner"]:
-            nav_options.extend(["Sales Matrix", "Product Catalog", "User Controls"])
+            nav_options.extend(["Dashboard", "Sales Matrix", "Product Catalog", "User Controls"])
 
         if user_role == "staff":
-            nav_options.extend(["Sales Matrix", "Product Catalog"])
+            nav_options.extend(["Dashboard", "Sales Matrix", "Product Catalog"])
             
         chosen_page = st.radio("Go to Page:", options=nav_options)
         
@@ -51,6 +52,9 @@ def main_app(user_email, user_role, user_business_id):
     # --- MAIN VIEW ROUTING LOGIC ---
     if chosen_page == "Home":
         show_dashboard_ui(user_role=user_role, business_uuid=user_business_id)
+
+    elif chosen_page == "Dashboard" and user_role in ["admin", "owner", "staff"]:
+        show_dashboard_metrics(supabase, user_business_id)
 
     elif chosen_page == "Sales Matrix" and user_role in ["admin", "owner", "staff"]:
         show_sales_management_ui()
