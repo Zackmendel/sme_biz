@@ -8,6 +8,7 @@ from supabase import Client, create_client
 from home import show_dashboard_ui
 from users import show_user_management_ui
 from sales import show_sales_management_ui
+from purchases import show_purchases_management_ui
 from auth import show_auth_screen, sign_out
 from onboard import show_onboarding_screen
 from products import show_products_management_ui
@@ -38,10 +39,10 @@ def main_app(user_email, user_role, user_business_id):
         
         nav_options = ["Home"]
         if user_role in ["admin", "owner"]:
-            nav_options.extend(["Dashboard", "Sales Matrix", "Product Catalog", "User Controls"])
+            nav_options.extend(["Dashboard", "Sales", "Purchases", "Product Catalog", "User Controls"])
 
         if user_role == "staff":
-            nav_options.extend(["Dashboard", "Sales Matrix", "Product Catalog"])
+            nav_options.extend(["Dashboard", "Sales", "Purchases"])
             
         chosen_page = st.radio("Go to Page:", options=nav_options)
         
@@ -56,13 +57,16 @@ def main_app(user_email, user_role, user_business_id):
     elif chosen_page == "Dashboard" and user_role in ["admin", "owner", "staff"]:
         show_dashboard_metrics(supabase, user_business_id)
 
-    elif chosen_page == "Sales Matrix" and user_role in ["admin", "owner", "staff"]:
+    elif chosen_page == "Sales" and user_role in ["admin", "owner", "staff"]:
         show_sales_management_ui()
+
+    elif chosen_page == "Purchases" and user_role in ["admin", "owner", "staff"]:
+        show_purchases_management_ui()
 
     elif chosen_page == "User Controls" and user_role in ["admin", "owner"]:
         show_user_management_ui()
 
-    elif chosen_page == "Product Catalog" and user_role in ["admin", "owner", "staff"]:
+    elif chosen_page == "Product Catalog" and user_role in ["admin", "owner"]:
         show_products_management_ui()
 
 # --- INITIALIZATION & ROUTING ENGINE ---

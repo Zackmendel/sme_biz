@@ -67,7 +67,8 @@ def show_sales_management_ui():
 
     with form_col:
         st.subheader("Add Sale Records")
-        customer_details = st.text_input("Customer Details/Name", placeholder="John Doe")
+        customer_details = st.text_input("Customer Details/Name", value="", placeholder="John Doe")
+        customer_details = customer_details if customer_details != "" else None
         st.markdown("### Item Selector")
         col_1, col_2, col_3 = st.columns([2, 1, 1])
         
@@ -119,30 +120,27 @@ def show_sales_management_ui():
             st.metric("Grand Total Due", f"₦{final_total:,.2f}")
             
             if st.button("🚀 Finalize & Submit Sale", type="primary"):
-                if not customer_details.strip():
-                    st.error("Please enter Customer Details before finalizing.")
-                else:
-                    sales_payloads = []
-                    for item in st.session_state.sale_items:
-                        allocated_discount = discount if len(sales_payloads) == 0 else 0.0
+                sales_payloads = []
+                for item in st.session_state.sale_items:
+                    allocated_discount = discount if len(sales_payloads) == 0 else 0.0
 
-                        payload = {
-                            "business_id": business_uuid,
-                            "user_id": st.session_state.user_id, # ✅ Extracted seamlessly from global state!
-                            "product_id": item["product_id"],
-                            "item_name": item["item_name"],
-                            "customer_details": customer_details,
-                            "quantity": item["quantity"],
-                            "price_per_unit": item["price_per_unit"],
-                            "discount": allocated_discount,
-                        }
-                        sales_payloads.append(payload)
-                    
-                    success = enter_sales(sales_payloads)
-                    if success:
-                        st.success(f"Successfully saved sale with {len(sales_payloads)} items!")
-                        st.session_state.sale_items = []
-                        st.rerun()
+                    payload = {
+                        "business_id": business_uuid,
+                        "user_id": st.session_state.user_id, # ✅ Extracted seamlessly from global state!
+                        "product_id": item["product_id"],
+                        "item_name": item["item_name"],
+                        "customer_details": customer_details,
+                        "quantity": item["quantity"],
+                        "price_per_unit": item["price_per_unit"],
+                        "discount": allocated_discount,
+                    }
+                    sales_payloads.append(payload)
+                
+                success = enter_sales(sales_payloads)
+                if success:
+                    st.success(f"Successfully saved sale with {len(sales_payloads)} items!")
+                    st.session_state.sale_items = []
+                    st.rerun()
         else:
             st.info("No items added to the current sale yet. Use the left panel to build the invoice.")
 
