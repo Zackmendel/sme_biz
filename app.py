@@ -13,6 +13,7 @@ from auth import show_auth_screen, sign_out
 from onboard import show_onboarding_screen
 from products import show_products_management_ui
 from dashboard import show_dashboard_metrics
+from debtors import show_debtors_management_ui
 
 # Initialize core page settings
 st.set_page_config(layout="wide", page_title="Business Portal")
@@ -39,10 +40,10 @@ def main_app(user_email, user_role, user_business_id):
         
         nav_options = ["Home"]
         if user_role in ["admin", "owner"]:
-            nav_options.extend(["Dashboard", "Sales", "Purchases", "Product Catalog", "User Controls"])
+            nav_options.extend(["Dashboard", "Sales", "Purchases", "Product Catalog", "Debtors", "User Controls"])
 
         if user_role == "staff":
-            nav_options.extend(["Dashboard", "Sales", "Purchases"])
+            nav_options.extend(["Dashboard", "Sales", "Purchases", "Debtors"])
             
         chosen_page = st.radio("Go to Page:", options=nav_options)
         
@@ -62,6 +63,9 @@ def main_app(user_email, user_role, user_business_id):
 
     elif chosen_page == "Purchases" and user_role in ["admin", "owner", "staff"]:
         show_purchases_management_ui()
+
+    elif chosen_page == "Debtors" and user_role in ["admin", "owner", "staff"]:
+        show_debtors_management_ui()
 
     elif chosen_page == "User Controls" and user_role in ["admin", "owner"]:
         show_user_management_ui()

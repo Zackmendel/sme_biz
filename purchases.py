@@ -61,7 +61,7 @@ def show_purchases_management_ui():
         with col_3:
             total_cost = st.number_input("Total Cost (₦)", min_value=0.0, step=50.0)
         
-        if st.button("➕ Add Item to Purchase"):
+        if st.button("➕ Add Item to Purchase", type="primary"):
             if selected_name.strip():
                 st.session_state.purchases_items.append({
                     "product_id": None,
