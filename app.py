@@ -20,8 +20,14 @@ st.set_page_config(layout="wide", page_title="Business Portal")
 
 load_dotenv()
 
+business_uuid = os.getenv("BUSINESS_ID") or ""
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_PUBLISHABLE_KEY")
+
+if not supabase_url or not supabase_key:
+    st.error("Supabase environment variables are missing.")
+    st.stop()
+
 supabase: Client = create_client(supabase_url, supabase_key)
 
 # --- MAIN APP LAYOUT ---

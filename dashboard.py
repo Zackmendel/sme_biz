@@ -5,6 +5,7 @@ from supabase import Client, create_client
 from dotenv import load_dotenv
 import plotly.express as px
 import plotly.graph_objects as go
+import datetime
 
 # Cache database hits so interactions don't spam Supabase
 @st.cache_data(ttl=60)  # Caches data for 60 seconds
@@ -60,35 +61,79 @@ def show_dashboard_metrics(supabase: Client, business_uuid: str):
     else:
         df_products = pd.DataFrame(columns=["id", "category"])
 
+    # Determine local dates based on system timezone
+    local_tz = datetime.datetime.now().astimezone().tzinfo
+    
+    if not df_sales.empty:
+        df_sales["date_local"] = df_sales["created_at"].dt.tz_convert(local_tz).dt.date
+    else:
+        df_sales["date_local"] = pd.Series(dtype="object")
+
+    if not df_purchases.empty:
+        df_purchases["date_local"] = df_purchases["created_at"].dt.tz_convert(local_tz).dt.date
+    else:
+        df_purchases["date_local"] = pd.Series(dtype="object")
+
+    today = datetime.date.today()
+
+    # Calculate Balance Brought Forward from the previous active day in the business cycle
+    historical_dates = set()
+    if not df_sales.empty:
+        historical_dates.update(df_sales[df_sales["date_local"] < today]["date_local"].dropna().unique())
+    if not df_purchases.empty:
+        historical_dates.update(df_purchases[df_purchases["date_local"] < today]["date_local"].dropna().unique())
+
+    sorted_historical_dates = sorted(list(historical_dates), reverse=True)
+
+    balance_brought_forward = 0.0
+    if sorted_historical_dates:
+        prev_date = sorted_historical_dates[0]
+        if not df_sales.empty:
+            prev_sales = pd.to_numeric(df_sales[df_sales["date_local"] == prev_date]["total"], errors="coerce").sum()
+        else:
+            prev_sales = 0.0
+        if not df_purchases.empty:
+            prev_expenses = pd.to_numeric(df_purchases[df_purchases["date_local"] == prev_date]["total"], errors="coerce").sum()
+        else:
+            prev_expenses = 0.0
+        balance_brought_forward = prev_sales - prev_expenses
+
+    # Filter for today's metrics
+    df_sales_today = df_sales[df_sales["date_local"] == today] if not df_sales.empty else df_sales.copy()
+    df_purchases_today = df_purchases[df_purchases["date_local"] == today] if not df_purchases.empty else df_purchases.copy()
+
     # =================================================================
     # Metric Calculation
     # =================================================================
-    if not df_sales.empty:
-        total_sales = pd.to_numeric(df_sales["total"], errors="coerce").sum()
-        transactions = df_sales["product_id"].count()
-        customers = df_sales["customer_details"].nunique()
-        total_discount = df_sales['discount'].sum()
-        sales_by_item = df_sales['total'].groupby(df_sales['item_name']).sum()
+    if not df_sales_today.empty:
+        today_sales = pd.to_numeric(df_sales_today["total"], errors="coerce").sum()
+        transactions = df_sales_today["product_id"].count()
+        customers = df_sales_today["customer_details"].nunique()
+        total_discount = df_sales_today['discount'].sum()
+        sales_by_item = df_sales_today['total'].groupby(df_sales_today['item_name']).sum()
         top_product = sales_by_item.idxmax() if not sales_by_item.empty else "N/A"
     else:
-        total_sales = 0.0
+        today_sales = 0.0
         transactions = 0
         customers = 0
         total_discount = 0.0
         top_product = "N/A"
 
-    if not df_purchases.empty:
-        total_expenses = pd.to_numeric(df_purchases["total"], errors="coerce").sum()
+    if not df_purchases_today.empty:
+        total_expenses = pd.to_numeric(df_purchases_today["total"], errors="coerce").sum()
     else:
         total_expenses = 0.0
 
+    total_sales = today_sales + balance_brought_forward
     profit = total_sales - total_expenses
     profit_margin = (profit / total_sales * 100) if total_sales != 0 else 0.0
 
     # =================================================================
     # Dashboard UI
     # =================================================================
-    st.title("Business Ledger Dashboard")
+    col1, col2 = st.columns([2,1], gap='medium', border=True)
+    col1.title("Business Ledger Dashboard")
+    col2.metric("Balance Brought Forward", value=f"₦{balance_brought_forward:,.2f}")
 
     col_1, col_2, col_3, col_4 = st.columns(4, border=True, gap="small")
 
@@ -223,7 +268,7 @@ def show_dashboard_metrics(supabase: Client, business_uuid: str):
     # 1. Merge the dataframes on the matching keys
     # 'id' from products table maps to 'product_id' in the sales table
     df_merged = pd.merge(
-        df_sales, 
+        df_sales_today, 
         df_products, 
         left_on="product_id", 
         right_on="id", 

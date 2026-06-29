@@ -67,8 +67,13 @@ def show_sales_management_ui():
 
     with form_col:
         st.subheader("Add Sale Records")
-        customer_details = st.text_input("Customer Details/Name", value="", placeholder="John Doe")
-        customer_details = customer_details if customer_details != "" else None
+        col1, col2 = st.columns([2, 1], gap='medium')
+        with col1:
+            customer_details = st.text_input("Customer Details/Name", value="", placeholder="John Doe")
+            customer_details = customer_details if customer_details != "" else None
+        with col2:
+            payment_type = st.selectbox("Payment Type", options=["cash", "transfer"])
+        
         st.markdown("### Item Selector")
         col_1, col_2, col_3 = st.columns([2, 1, 1])
         
@@ -93,6 +98,7 @@ def show_sales_management_ui():
                     "item_name": selected_name,
                     "price_per_unit": price_per_unit,
                     "quantity": quantity,
+                    "payment_type": payment_type,
                     "total": row_total
                 })
                 st.rerun()
@@ -104,7 +110,7 @@ def show_sales_management_ui():
         
         if st.session_state.sale_items:
             df_cart = pd.DataFrame(st.session_state.sale_items)
-            st.dataframe(df_cart[["item_name", "price_per_unit", "quantity", "total"]], width='stretch')
+            st.dataframe(df_cart[["item_name", "price_per_unit", "payment_type", "quantity", "total"]], width='stretch')
             
             subtotal = df_cart["total"].sum()
             
@@ -132,6 +138,7 @@ def show_sales_management_ui():
                         "customer_details": customer_details,
                         "quantity": item["quantity"],
                         "price_per_unit": item["price_per_unit"],
+                        "payment_type": item["payment_type"],
                         "discount": allocated_discount,
                     }
                     sales_payloads.append(payload)
